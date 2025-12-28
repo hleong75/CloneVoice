@@ -10,11 +10,23 @@ The files in this directory are generated using the audio samples from the `audi
 
 ### Prerequisites
 
-1. **Python 3.9-3.11** (required by TTS library)
+1. **Python 3.9+** (Python 3.12+ supported with coqui-tts)
 2. All dependencies installed:
    ```bash
    pip install -r requirements.txt
    ```
+
+### Voice Cloning Example
+
+To clone a voice from the audio samples and generate custom text:
+
+```bash
+# Automatic mode - uses audio files as reference for voice cloning
+python clone_voice.py --auto --audio-dir ./audios --text "Annonces vocales automatisées pour des informations passager temps réel." --output outputs/annonces_vocales_cloned.wav --language fr
+
+# With manual CSV for transcriptions
+python clone_voice.py --csv data.csv --audio-dir ./audios --text "Prochain arrêt, Bièvres Gare." --output outputs/prochain_arret.wav --language fr
+```
 
 ### Running the Test
 
