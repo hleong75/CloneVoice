@@ -204,7 +204,6 @@ def preprocess_audio_for_cloning(
     """
     import librosa
     import soundfile as sf
-    from scipy import signal
     
     audio_path = Path(audio_path)
     if not audio_path.exists():
@@ -295,7 +294,6 @@ def _reduce_noise_spectral(audio: np.ndarray, sr: int) -> np.ndarray:
         Noise-reduced audio data.
     """
     import librosa
-    from scipy import signal
     
     # Compute short-time Fourier transform
     n_fft = 2048
