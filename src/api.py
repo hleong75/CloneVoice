@@ -32,12 +32,15 @@ def clone_voice(
     text: str,
     output_path: str,
     language: str = "fr",
-    use_gpu: bool = True
+    use_gpu: bool = True,
+    preprocess_audio: bool = True,
+    **kwargs
 ) -> str:
     """
     Clone a voice using a CSV file with audio references and transcriptions.
     
     This is Version 1 of CloneVoice - requires a manually created CSV file.
+    Uses optimized inference parameters and audio preprocessing for best quality.
     
     Args:
         csv_path: Path to CSV file with columns: audio_id, transcription
@@ -46,6 +49,8 @@ def clone_voice(
         output_path: Where to save the generated audio
         language: Language code (default: "fr" for French)
         use_gpu: Use GPU acceleration if available
+        preprocess_audio: Preprocess reference audio for optimal quality
+        **kwargs: Additional inference parameters (temperature, speed, etc.)
         
     Returns:
         Path to the generated audio file
@@ -75,14 +80,18 @@ def clone_voice(
             "and their names match the audio_id column in the CSV."
         )
     
-    # Clone voice
-    cloner = VoiceCloner(use_gpu=use_gpu)
-    return cloner.clone_voice(
-        text=text,
-        reference_audio=reference_audios,
-        output_path=output_path,
-        language=language
-    )
+    # Clone voice with optimized settings
+    cloner = VoiceCloner(use_gpu=use_gpu, preprocess_audio=preprocess_audio)
+    try:
+        return cloner.clone_voice(
+            text=text,
+            reference_audio=reference_audios,
+            output_path=output_path,
+            language=language,
+            **kwargs
+        )
+    finally:
+        cloner.cleanup()
 
 
 def clone_voice_auto(
@@ -91,13 +100,16 @@ def clone_voice_auto(
     output_path: str,
     language: str = "fr",
     whisper_model: str = "base",
-    use_gpu: bool = True
+    use_gpu: bool = True,
+    preprocess_audio: bool = True,
+    **kwargs
 ) -> str:
     """
     Clone a voice with automatic transcription - no CSV needed.
     
     This is Version 2 of CloneVoice - automatically transcribes audio files
-    using OpenAI Whisper before voice cloning.
+    using OpenAI Whisper before voice cloning. Uses optimized inference
+    parameters and audio preprocessing for best quality.
     
     Args:
         audio_dir: Directory containing the reference audio files
@@ -106,6 +118,8 @@ def clone_voice_auto(
         language: Language code (default: "fr" for French)
         whisper_model: Whisper model size ("tiny", "base", "small", "medium", "large")
         use_gpu: Use GPU acceleration if available
+        preprocess_audio: Preprocess reference audio for optimal quality
+        **kwargs: Additional inference parameters (temperature, speed, etc.)
         
     Returns:
         Path to the generated audio file
@@ -138,14 +152,18 @@ def clone_voice_auto(
     
     reference_audios = [str(f) for f in sorted(audio_files)]
     
-    # Clone voice
-    cloner = VoiceCloner(use_gpu=use_gpu)
-    return cloner.clone_voice(
-        text=text,
-        reference_audio=reference_audios,
-        output_path=output_path,
-        language=language
-    )
+    # Clone voice with optimized settings
+    cloner = VoiceCloner(use_gpu=use_gpu, preprocess_audio=preprocess_audio)
+    try:
+        return cloner.clone_voice(
+            text=text,
+            reference_audio=reference_audios,
+            output_path=output_path,
+            language=language,
+            **kwargs
+        )
+    finally:
+        cloner.cleanup()
 
 
 def generate_transcriptions(

@@ -113,19 +113,33 @@ class TestVoiceClonerInit(unittest.TestCase):
         self.assertEqual(cloner.model_name, "tts_models/multilingual/multi-dataset/xtts_v2")
         self.assertIsNone(cloner.device)
         self.assertTrue(cloner.use_gpu)
+        self.assertTrue(cloner.preprocess_audio)
         self.assertFalse(cloner._initialized)
+        
+        # Check default inference parameters
+        self.assertIn("temperature", cloner.inference_params)
+        self.assertIn("repetition_penalty", cloner.inference_params)
+        self.assertIn("speed", cloner.inference_params)
 
     def test_init_custom_params(self):
         """Test VoiceCloner initialization with custom parameters."""
+        custom_inference_params = {"temperature": 0.5, "speed": 1.2}
         cloner = VoiceCloner(
             model_name="custom_model",
             device="cpu",
-            use_gpu=False
+            use_gpu=False,
+            preprocess_audio=False,
+            inference_params=custom_inference_params
         )
         
         self.assertEqual(cloner.model_name, "custom_model")
         self.assertEqual(cloner.device, "cpu")
         self.assertFalse(cloner.use_gpu)
+        self.assertFalse(cloner.preprocess_audio)
+        
+        # Check that custom inference params override defaults
+        self.assertEqual(cloner.inference_params["temperature"], 0.5)
+        self.assertEqual(cloner.inference_params["speed"], 1.2)
 
     def test_get_available_languages(self):
         """Test getting available languages."""
@@ -136,6 +150,17 @@ class TestVoiceClonerInit(unittest.TestCase):
         self.assertIn("en", languages)
         self.assertIn("fr", languages)
         self.assertIn("de", languages)
+
+    def test_cleanup(self):
+        """Test cleanup method."""
+        cloner = VoiceCloner()
+        # Add some fake temp dirs
+        cloner._temp_dirs = ["/tmp/fake_dir_1", "/tmp/fake_dir_2"]
+        
+        # Cleanup should clear the list even if dirs don't exist
+        cloner.cleanup()
+        
+        self.assertEqual(cloner._temp_dirs, [])
 
 
 if __name__ == "__main__":
