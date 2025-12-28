@@ -96,6 +96,12 @@ class VoiceCloner:
             pass
         
         try:
+            from TTS.tts.models.xtts import XttsAudioConfig
+            torch.serialization.add_safe_globals([XttsAudioConfig])
+        except ImportError:
+            pass
+        
+        try:
             from TTS.config import BaseAudioConfig, BaseDatasetConfig
             torch.serialization.add_safe_globals([BaseAudioConfig, BaseDatasetConfig])
         except ImportError:
