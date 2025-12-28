@@ -1,7 +1,10 @@
 # Voice Cloning Application Dependencies
 
 # TTS and Voice Cloning
-TTS>=0.22.0
+# coqui-tts is the maintained fork of the original Coqui TTS library.
+# It provides Python 3.12+ support and ongoing maintenance.
+# The API is compatible with the original TTS library.
+coqui-tts>=0.24.0
 
 # Audio Processing
 librosa>=0.10.0
