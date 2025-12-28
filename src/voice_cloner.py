@@ -62,6 +62,10 @@ class VoiceCloner:
         # This is required because torch.load() now defaults to weights_only=True
         self._register_tts_safe_globals()
         
+        # Patch GPT2InferenceModel to support transformers >= 4.50
+        # This is required because GenerationMixin is no longer inherited by default
+        self._patch_gpt2_inference_model()
+        
         from TTS.api import TTS
         
         # Determine device
@@ -105,6 +109,33 @@ class VoiceCloner:
             from TTS.config import BaseAudioConfig, BaseDatasetConfig
             torch.serialization.add_safe_globals([BaseAudioConfig, BaseDatasetConfig])
         except ImportError:
+            pass
+    
+    def _patch_gpt2_inference_model(self) -> None:
+        """
+        Patch GPT2InferenceModel to inherit from GenerationMixin.
+        
+        In transformers >= 4.50, PreTrainedModel no longer inherits from
+        GenerationMixin by default. The XTTS v2 model uses GPT2InferenceModel
+        which needs GenerationMixin to call the generate() method.
+        
+        This patch dynamically adds GenerationMixin to the class bases.
+        """
+        try:
+            from transformers import GenerationMixin
+            from TTS.tts.layers.xtts.gpt_inference import GPT2InferenceModel
+            
+            # Check if GenerationMixin is already in the bases or inherited
+            if GenerationMixin not in GPT2InferenceModel.__bases__:
+                # Add GenerationMixin to the class bases
+                GPT2InferenceModel.__bases__ = (
+                    GPT2InferenceModel.__bases__ + (GenerationMixin,)
+                )
+        except ImportError:
+            # TTS package may not have this module in all versions
+            pass
+        except TypeError:
+            # May occur if there's an MRO conflict; the model might work anyway
             pass
     
     def clone_voice(
