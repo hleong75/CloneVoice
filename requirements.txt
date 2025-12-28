@@ -1,0 +1,21 @@
+# Voice Cloning Application Dependencies
+
+# TTS and Voice Cloning
+TTS>=0.22.0
+
+# Audio Processing
+librosa>=0.10.0
+soundfile>=0.12.0
+scipy>=1.11.0
+numpy>=1.24.0
+
+# Automatic Speech Recognition (for Version 2)
+openai-whisper>=20231117
+
+# Utilities
+pandas>=2.0.0
+tqdm>=4.65.0
+
+# PyTorch (CPU version by default, user can install CUDA version)
+torch>=2.6.0
+torchaudio>=2.6.0
