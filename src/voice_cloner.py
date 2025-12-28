@@ -6,6 +6,7 @@ Uses Coqui TTS with XTTS v2 for high-quality voice cloning.
 """
 
 import os
+import shutil
 import tempfile
 from pathlib import Path
 from typing import List, Optional, Union
@@ -23,6 +24,11 @@ class VoiceCloner:
     - Clone voices from short audio samples (as short as 6 seconds)
     - Generate natural-sounding speech in multiple languages
     - Preserve the speaker's characteristics including accent and prosody
+    
+    This implementation includes:
+    - Automatic audio preprocessing for optimal quality
+    - Tuned inference parameters for natural speech
+    - Support for multiple reference audio files
     """
     
     # XTTS v2 supported languages
@@ -31,11 +37,24 @@ class VoiceCloner:
         "nl", "cs", "ar", "zh-cn", "ja", "hu", "ko", "hi"
     ]
     
+    # Default inference parameters for high-quality output
+    DEFAULT_INFERENCE_PARAMS = {
+        "temperature": 0.65,           # Lower = more deterministic, higher = more variation
+        "length_penalty": 1.0,         # Penalize very long sequences
+        "repetition_penalty": 5.0,     # Prevent repetitive artifacts
+        "top_k": 50,                   # Top-k sampling
+        "top_p": 0.85,                 # Nucleus sampling threshold
+        "speed": 1.0,                  # Speech speed multiplier
+        "enable_text_splitting": True  # Split long text for better quality
+    }
+    
     def __init__(
         self,
         model_name: str = "tts_models/multilingual/multi-dataset/xtts_v2",
         device: Optional[str] = None,
-        use_gpu: bool = True
+        use_gpu: bool = True,
+        preprocess_audio: bool = True,
+        inference_params: Optional[dict] = None
     ):
         """
         Initialize the voice cloning engine.
@@ -44,12 +63,21 @@ class VoiceCloner:
             model_name: Name of the TTS model to use.
             device: Specific device to use ('cuda', 'cpu', etc.).
             use_gpu: If True and CUDA is available, use GPU.
+            preprocess_audio: If True, preprocess reference audio for better quality.
+            inference_params: Custom inference parameters (overrides defaults).
         """
         self.model_name = model_name
         self.tts = None
         self.device = device
         self.use_gpu = use_gpu
+        self.preprocess_audio = preprocess_audio
         self._initialized = False
+        self._temp_dirs = []  # Track temp directories for cleanup
+        
+        # Set inference parameters
+        self.inference_params = self.DEFAULT_INFERENCE_PARAMS.copy()
+        if inference_params:
+            self.inference_params.update(inference_params)
         
     def _initialize(self) -> None:
         """Lazy initialization of the TTS model."""
@@ -143,16 +171,21 @@ class VoiceCloner:
         text: str,
         reference_audio: Union[str, List[str]],
         output_path: str,
-        language: str = "fr"
+        language: str = "fr",
+        **kwargs
     ) -> str:
         """
-        Clone a voice and generate speech.
+        Clone a voice and generate speech with high-quality output.
+        
+        This method preprocesses reference audio and uses optimized inference
+        parameters for the best possible voice cloning quality.
         
         Args:
             text: Text to synthesize.
             reference_audio: Path to reference audio file(s) for voice cloning.
             output_path: Path to save the generated audio.
             language: Target language code (e.g., 'en', 'fr', 'es', 'de').
+            **kwargs: Additional inference parameters to override defaults.
             
         Returns:
             Path to the generated audio file.
@@ -165,19 +198,82 @@ class VoiceCloner:
         
         # Handle multiple reference audios
         if isinstance(reference_audio, list):
-            speaker_wav = reference_audio
+            audio_paths = reference_audio
         else:
-            speaker_wav = reference_audio
+            audio_paths = [reference_audio]
         
-        # Generate speech with cloned voice
+        # Validate and preprocess reference audios
+        speaker_wav = self._prepare_reference_audio(audio_paths)
+        
+        if not speaker_wav:
+            raise ValueError(
+                "No valid reference audio files found. "
+                "Ensure audio files are at least 3 seconds long and in a supported format."
+            )
+        
+        # Merge inference parameters with any overrides
+        inference_params = self.inference_params.copy()
+        inference_params.update(kwargs)
+        
+        # Generate speech with cloned voice using optimized parameters
         self.tts.tts_to_file(
             text=text,
             file_path=str(output_path),
             speaker_wav=speaker_wav,
-            language=language
+            language=language,
+            **inference_params
         )
         
         return str(output_path.absolute())
+    
+    def _prepare_reference_audio(self, audio_paths: List[str]) -> List[str]:
+        """
+        Validate and preprocess reference audio files for optimal voice cloning.
+        
+        Args:
+            audio_paths: List of paths to reference audio files.
+            
+        Returns:
+            List of paths to preprocessed audio files.
+        """
+        from src.audio_processing import (
+            validate_and_get_best_reference,
+            preprocess_reference_audios,
+            MAX_DURATION_SECONDS
+        )
+        
+        # Validate audio files and filter out invalid ones
+        valid_paths, messages = validate_and_get_best_reference(audio_paths)
+        
+        # Print validation messages
+        print("\n📋 Reference audio validation:")
+        for msg in messages:
+            print(f"   {msg}")
+        
+        if not valid_paths:
+            return []
+        
+        # Preprocess audio files if enabled
+        if self.preprocess_audio:
+            print("\n🔧 Preprocessing reference audio for optimal quality...")
+            
+            # Create temp directory for preprocessed files
+            temp_dir = tempfile.mkdtemp(prefix='clonevoice_')
+            self._temp_dirs.append(temp_dir)
+            
+            preprocessed = preprocess_reference_audios(
+                valid_paths,
+                output_dir=temp_dir,
+                normalize=True,
+                trim_silence=True,
+                reduce_noise=True,
+                max_duration=MAX_DURATION_SECONDS
+            )
+            
+            print(f"   ✓ Preprocessed {len(preprocessed)} audio file(s)")
+            return preprocessed
+        
+        return valid_paths
     
     def batch_clone(
         self,
@@ -233,16 +329,43 @@ class VoiceCloner:
             List of language codes.
         """
         return self.SUPPORTED_LANGUAGES.copy()
+    
+    def cleanup(self) -> None:
+        """
+        Clean up temporary files and resources.
+        
+        Call this method when done with voice cloning to free up disk space.
+        """
+        for temp_dir in self._temp_dirs:
+            try:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+            except Exception:
+                pass
+        self._temp_dirs.clear()
+    
+    def __del__(self):
+        """Destructor to ensure cleanup of temporary files."""
+        self.cleanup()
 
 
-def create_voice_cloner(use_gpu: bool = True) -> VoiceCloner:
+def create_voice_cloner(
+    use_gpu: bool = True,
+    preprocess_audio: bool = True,
+    inference_params: Optional[dict] = None
+) -> VoiceCloner:
     """
-    Factory function to create a VoiceCloner instance.
+    Factory function to create a VoiceCloner instance with optimal settings.
     
     Args:
         use_gpu: If True and CUDA is available, use GPU.
+        preprocess_audio: If True, preprocess reference audio for better quality.
+        inference_params: Custom inference parameters (overrides defaults).
         
     Returns:
         Configured VoiceCloner instance.
     """
-    return VoiceCloner(use_gpu=use_gpu)
+    return VoiceCloner(
+        use_gpu=use_gpu,
+        preprocess_audio=preprocess_audio,
+        inference_params=inference_params
+    )

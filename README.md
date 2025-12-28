@@ -68,7 +68,20 @@ python clone_voice.py --auto --audio-dir ./audios --text "Bonjour" --output sort
 
 # Mode batch avec fichier de textes
 python clone_voice.py --csv data.csv --audio-dir ./audios --text-file textes.txt --output-dir ./sorties
+
+# Ajuster les paramètres de qualité (avancé)
+python clone_voice.py --auto --audio-dir ./audios --text "Bonjour" --output sortie.wav \
+    --temperature 0.5 --speed 1.0 --repetition-penalty 6.0
 ```
+
+### Paramètres de qualité (avancé)
+
+| Paramètre | Défaut | Description |
+|-----------|--------|-------------|
+| `--temperature` | 0.65 | Contrôle la variation (0.1-1.0). Plus bas = plus déterministe |
+| `--speed` | 1.0 | Vitesse de parole (0.5-2.0) |
+| `--repetition-penalty` | 5.0 | Pénalité de répétition (1.0-10.0). Plus haut = moins de répétitions |
+| `--no-preprocess` | False | Désactiver le prétraitement audio (non recommandé) |
 
 ## 🐍 API Python
 
@@ -88,6 +101,16 @@ result = clone_voice_auto(
     audio_dir="./audios",
     text="Bonjour le monde",
     output_path="sortie.wav"
+)
+
+# Avec paramètres personnalisés
+result = clone_voice_auto(
+    audio_dir="./audios",
+    text="Bonjour le monde",
+    output_path="sortie.wav",
+    temperature=0.5,
+    speed=1.0,
+    repetition_penalty=6.0
 )
 
 # Générer un CSV de transcriptions
@@ -119,9 +142,37 @@ CloneVoice/
 
 ## 🎯 Format des fichiers audio
 
+### Exigences
+
 - **Formats supportés** : WAV, MP3, FLAC, OGG, M4A
-- **Durée recommandée** : 6-30 secondes par fichier
+- **Durée recommandée** : 6-30 secondes par fichier (optimal: 10s)
 - **Qualité recommandée** : Audio clair, sans bruit de fond
+
+### Conseils pour une meilleure qualité
+
+Pour obtenir les meilleurs résultats de clonage vocal :
+
+1. **Qualité audio** :
+   - Utilisez des enregistrements de haute qualité (minimum 16kHz)
+   - Évitez les bruits de fond (ventilateurs, musique, etc.)
+   - Préférez les enregistrements mono
+
+2. **Durée optimale** :
+   - Minimum : 3 secondes
+   - Optimal : 6-15 secondes
+   - Maximum : 30 secondes (au-delà, l'audio sera automatiquement tronqué)
+
+3. **Contenu vocal** :
+   - Parole claire et distincte
+   - Évitez les chuchotements ou les cris
+   - Plusieurs phrases variées sont préférables à une seule répétition
+
+4. **Prétraitement automatique** :
+   - Le programme normalise automatiquement le volume
+   - Les silences au début/fin sont supprimés
+   - Une légère réduction de bruit est appliquée
+
+> **Note** : Si la sortie audio n'est pas claire, essayez d'améliorer la qualité de vos fichiers audio de référence.
 
 ## 🌍 Langues supportées
 

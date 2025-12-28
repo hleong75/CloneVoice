@@ -25,7 +25,9 @@ def version1_clone(
     text: str,
     output_path: str,
     language: str = "fr",
-    use_gpu: bool = True
+    use_gpu: bool = True,
+    preprocess_audio: bool = True,
+    inference_params: Optional[dict] = None
 ) -> str:
     """
     Version 1: Voice cloning with manual CSV input.
@@ -37,6 +39,8 @@ def version1_clone(
         output_path: Path to save the output audio.
         language: Language code for synthesis.
         use_gpu: Whether to use GPU if available.
+        preprocess_audio: Whether to preprocess audio for better quality.
+        inference_params: Optional inference parameters for voice synthesis.
         
     Returns:
         Path to the generated audio file.
@@ -69,26 +73,33 @@ def version1_clone(
     
     print(f"\n🎤 Using {len(reference_audios)} reference audio(s) for voice cloning")
     
-    # Initialize voice cloner
+    # Initialize voice cloner with optimized settings
     print("\n🤖 Initializing AI voice cloning model...")
-    cloner = VoiceCloner(use_gpu=use_gpu)
-    
-    # Clone voice and generate speech
-    print(f"\n🔊 Generating speech with cloned voice...")
-    print(f"   Text: \"{text}\"")
-    print(f"   Language: {language}")
-    
-    result = cloner.clone_voice(
-        text=text,
-        reference_audio=reference_audios,
-        output_path=output_path,
-        language=language
+    cloner = VoiceCloner(
+        use_gpu=use_gpu,
+        preprocess_audio=preprocess_audio,
+        inference_params=inference_params
     )
     
-    print(f"\n✅ Audio generated successfully!")
-    print(f"   Output: {result}")
-    
-    return result
+    try:
+        # Clone voice and generate speech
+        print(f"\n🔊 Generating speech with cloned voice...")
+        print(f"   Text: \"{text}\"")
+        print(f"   Language: {language}")
+        
+        result = cloner.clone_voice(
+            text=text,
+            reference_audio=reference_audios,
+            output_path=output_path,
+            language=language
+        )
+        
+        print(f"\n✅ Audio generated successfully!")
+        print(f"   Output: {result}")
+        
+        return result
+    finally:
+        cloner.cleanup()
 
 
 def version2_auto_clone(
@@ -97,7 +108,9 @@ def version2_auto_clone(
     output_path: str,
     language: str = "fr",
     whisper_model: str = "base",
-    use_gpu: bool = True
+    use_gpu: bool = True,
+    preprocess_audio: bool = True,
+    inference_params: Optional[dict] = None
 ) -> str:
     """
     Version 2: Automatic CSV generation and voice cloning.
@@ -112,6 +125,8 @@ def version2_auto_clone(
         language: Language code for synthesis.
         whisper_model: Whisper model size for transcription.
         use_gpu: Whether to use GPU if available.
+        preprocess_audio: Whether to preprocess audio for better quality.
+        inference_params: Optional inference parameters for voice synthesis.
         
     Returns:
         Path to the generated audio file.
@@ -130,6 +145,7 @@ def version2_auto_clone(
     temp_dir = tempfile.mkdtemp()
     temp_csv = os.path.join(temp_dir, "auto_transcriptions.csv")
     
+    cloner = None
     try:
         # Auto-generate CSV with transcriptions
         print(f"\n📝 Automatically transcribing audio files...")
@@ -159,9 +175,13 @@ def version2_auto_clone(
         
         print(f"\n🎤 Using {len(reference_audios)} reference audio(s) for voice cloning")
         
-        # Initialize voice cloner
+        # Initialize voice cloner with optimized settings
         print("\n🤖 Initializing AI voice cloning model...")
-        cloner = VoiceCloner(use_gpu=use_gpu)
+        cloner = VoiceCloner(
+            use_gpu=use_gpu,
+            preprocess_audio=preprocess_audio,
+            inference_params=inference_params
+        )
         
         # Clone voice and generate speech
         print(f"\n🔊 Generating speech with cloned voice...")
@@ -181,7 +201,9 @@ def version2_auto_clone(
         return result
     
     finally:
-        # Clean up temporary files
+        # Clean up temporary files and cloner resources
+        if cloner:
+            cloner.cleanup()
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
@@ -334,6 +356,34 @@ Examples:
         help="Disable GPU acceleration"
     )
     
+    # Quality options
+    parser.add_argument(
+        "--no-preprocess",
+        action="store_true",
+        help="Disable audio preprocessing (not recommended)"
+    )
+    
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=0.65,
+        help="Inference temperature (0.1-1.0, default: 0.65). Lower = more deterministic"
+    )
+    
+    parser.add_argument(
+        "--speed",
+        type=float,
+        default=1.0,
+        help="Speech speed multiplier (0.5-2.0, default: 1.0)"
+    )
+    
+    parser.add_argument(
+        "--repetition-penalty",
+        type=float,
+        default=5.0,
+        help="Repetition penalty (1.0-10.0, default: 5.0). Higher = less repetition"
+    )
+    
     args = parser.parse_args()
     
     # Validate arguments
@@ -350,6 +400,14 @@ Examples:
         parser.error("--output is required when using --text")
     
     use_gpu = not args.no_gpu
+    preprocess_audio = not args.no_preprocess
+    
+    # Build inference parameters
+    inference_params = {
+        "temperature": args.temperature,
+        "speed": args.speed,
+        "repetition_penalty": args.repetition_penalty
+    }
     
     try:
         if args.text_file:
@@ -392,7 +450,9 @@ Examples:
                     output_path=args.output,
                     language=args.language,
                     whisper_model=args.whisper_model,
-                    use_gpu=use_gpu
+                    use_gpu=use_gpu,
+                    preprocess_audio=preprocess_audio,
+                    inference_params=inference_params
                 )
             else:
                 version1_clone(
@@ -401,7 +461,9 @@ Examples:
                     text=args.text,
                     output_path=args.output,
                     language=args.language,
-                    use_gpu=use_gpu
+                    use_gpu=use_gpu,
+                    preprocess_audio=preprocess_audio,
+                    inference_params=inference_params
                 )
                 
     except Exception as e:
