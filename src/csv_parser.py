@@ -35,6 +35,10 @@ class CSVParser:
     - Column 2: Transcription text
     """
     
+    # Constants for audio file handling
+    SUPPORTED_EXTENSIONS = ['.wav', '.mp3', '.flac', '.ogg', '.m4a']
+    NUMERIC_ID_PADDING_LENGTHS = [2, 3, 4, 5]  # Common zero-padding lengths for numeric IDs
+    
     def __init__(self, audio_directory: Optional[str] = None):
         """
         Initialize the CSV parser.
@@ -44,7 +48,7 @@ class CSVParser:
                            uses the directory containing the CSV file.
         """
         self.audio_directory = audio_directory
-        self.supported_extensions = ['.wav', '.mp3', '.flac', '.ogg', '.m4a']
+        self.supported_extensions = self.SUPPORTED_EXTENSIONS
     
     def parse(self, csv_path: str) -> List[AudioEntry]:
         """
@@ -200,7 +204,7 @@ class CSVParser:
                     return str(path.absolute())
                 
                 # Try with common padding
-                for padding in [2, 3, 4, 5]:
+                for padding in self.NUMERIC_ID_PADDING_LENGTHS:
                     padded_id = audio_id.zfill(padding)
                     path = audio_dir / f"{padded_id}{ext}"
                     if path.exists():

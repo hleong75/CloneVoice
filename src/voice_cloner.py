@@ -25,6 +25,12 @@ class VoiceCloner:
     - Preserve the speaker's characteristics including accent and prosody
     """
     
+    # XTTS v2 supported languages
+    SUPPORTED_LANGUAGES = [
+        "en", "es", "fr", "de", "it", "pt", "pl", "tr", "ru",
+        "nl", "cs", "ar", "zh-cn", "ja", "hu", "ko", "hi"
+    ]
+    
     def __init__(
         self,
         model_name: str = "tts_models/multilingual/multi-dataset/xtts_v2",
@@ -164,9 +170,7 @@ class VoiceCloner:
         Returns:
             List of language codes.
         """
-        # XTTS v2 supported languages
-        return ["en", "es", "fr", "de", "it", "pt", "pl", "tr", "ru", 
-                "nl", "cs", "ar", "zh-cn", "ja", "hu", "ko", "hi"]
+        return self.SUPPORTED_LANGUAGES.copy()
 
 
 def create_voice_cloner(use_gpu: bool = True) -> VoiceCloner:

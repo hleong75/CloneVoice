@@ -119,6 +119,7 @@ def version2_auto_clone(
     from src.auto_transcriber import auto_generate_csv
     from src.voice_cloner import VoiceCloner
     
+    import shutil
     import tempfile
     
     print("=" * 50)
@@ -129,61 +130,59 @@ def version2_auto_clone(
     temp_dir = tempfile.mkdtemp()
     temp_csv = os.path.join(temp_dir, "auto_transcriptions.csv")
     
-    # Auto-generate CSV with transcriptions
-    print(f"\n📝 Automatically transcribing audio files...")
-    print(f"   Directory: {audio_dir}")
-    print(f"   Whisper model: {whisper_model}")
-    
-    csv_path = auto_generate_csv(
-        audio_directory=audio_dir,
-        output_csv=temp_csv,
-        model_size=whisper_model,
-        language=language
-    )
-    
-    # Get list of audio files
-    audio_extensions = ['.wav', '.mp3', '.flac', '.ogg', '.m4a']
-    audio_files = []
-    audio_dir_path = Path(audio_dir)
-    
-    for ext in audio_extensions:
-        audio_files.extend(audio_dir_path.glob(f"*{ext}"))
-        audio_files.extend(audio_dir_path.glob(f"*{ext.upper()}"))
-    
-    reference_audios = [str(f) for f in sorted(audio_files)]
-    
-    if not reference_audios:
-        raise ValueError("No audio files found in directory!")
-    
-    print(f"\n🎤 Using {len(reference_audios)} reference audio(s) for voice cloning")
-    
-    # Initialize voice cloner
-    print("\n🤖 Initializing AI voice cloning model...")
-    cloner = VoiceCloner(use_gpu=use_gpu)
-    
-    # Clone voice and generate speech
-    print(f"\n🔊 Generating speech with cloned voice...")
-    print(f"   Text: \"{text}\"")
-    print(f"   Language: {language}")
-    
-    result = cloner.clone_voice(
-        text=text,
-        reference_audio=reference_audios,
-        output_path=output_path,
-        language=language
-    )
-    
-    print(f"\n✅ Audio generated successfully!")
-    print(f"   Output: {result}")
-    
-    # Clean up temporary files
     try:
-        os.remove(temp_csv)
-        os.rmdir(temp_dir)
-    except Exception:
-        pass
+        # Auto-generate CSV with transcriptions
+        print(f"\n📝 Automatically transcribing audio files...")
+        print(f"   Directory: {audio_dir}")
+        print(f"   Whisper model: {whisper_model}")
+        
+        csv_path = auto_generate_csv(
+            audio_directory=audio_dir,
+            output_csv=temp_csv,
+            model_size=whisper_model,
+            language=language
+        )
+        
+        # Get list of audio files
+        audio_extensions = ['.wav', '.mp3', '.flac', '.ogg', '.m4a']
+        audio_files = []
+        audio_dir_path = Path(audio_dir)
+        
+        for ext in audio_extensions:
+            audio_files.extend(audio_dir_path.glob(f"*{ext}"))
+            audio_files.extend(audio_dir_path.glob(f"*{ext.upper()}"))
+        
+        reference_audios = [str(f) for f in sorted(audio_files)]
+        
+        if not reference_audios:
+            raise ValueError("No audio files found in directory!")
+        
+        print(f"\n🎤 Using {len(reference_audios)} reference audio(s) for voice cloning")
+        
+        # Initialize voice cloner
+        print("\n🤖 Initializing AI voice cloning model...")
+        cloner = VoiceCloner(use_gpu=use_gpu)
+        
+        # Clone voice and generate speech
+        print(f"\n🔊 Generating speech with cloned voice...")
+        print(f"   Text: \"{text}\"")
+        print(f"   Language: {language}")
+        
+        result = cloner.clone_voice(
+            text=text,
+            reference_audio=reference_audios,
+            output_path=output_path,
+            language=language
+        )
+        
+        print(f"\n✅ Audio generated successfully!")
+        print(f"   Output: {result}")
+        
+        return result
     
-    return result
+    finally:
+        # Clean up temporary files
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 def batch_clone(
