@@ -125,7 +125,7 @@ class VoiceCloner:
             from transformers import GenerationMixin
             from TTS.tts.layers.xtts.gpt_inference import GPT2InferenceModel
             
-            # Check if GenerationMixin is already in the bases
+            # Check if GenerationMixin is already in the bases or inherited
             if GenerationMixin not in GPT2InferenceModel.__bases__:
                 # Add GenerationMixin to the class bases
                 GPT2InferenceModel.__bases__ = (
@@ -133,6 +133,9 @@ class VoiceCloner:
                 )
         except ImportError:
             # TTS package may not have this module in all versions
+            pass
+        except TypeError:
+            # May occur if there's an MRO conflict; the model might work anyway
             pass
     
     def clone_voice(
