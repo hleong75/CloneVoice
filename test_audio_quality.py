@@ -148,7 +148,7 @@ def print_audio_analysis(infos: List[AudioInfo], stats: dict) -> None:
     print(f"   Invalid files:   {stats['invalid']}")
     print(f"   Too short (<3s): {stats['too_short']}")
     print(f"   Too long (>30s): {stats['too_long']}")
-    print(f"   Suitable (3-30s):{stats['suitable']}")
+    print(f"   Suitable (3-30s): {stats['suitable']}")
     print(f"\n⏱️  Duration Statistics:")
     print(f"   Total duration:  {stats['total_duration']:.2f}s ({stats['total_duration']/60:.2f}min)")
     print(f"   Min duration:    {stats['min_duration']:.2f}s")

@@ -11,7 +11,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-# Add src to path
+# Add root directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from test_audio_quality import AudioInfo, get_audio_info, analyze_audio_files
