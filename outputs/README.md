@@ -22,10 +22,18 @@ To clone a voice from the audio samples and generate custom text:
 
 ```bash
 # Automatic mode - uses audio files as reference for voice cloning
-python clone_voice.py --auto --audio-dir ./audios --text "Annonces vocales automatisées pour des informations passager temps réel." --output outputs/annonces_vocales_cloned.wav --language fr
+python clone_voice.py --auto \
+    --audio-dir ./audios \
+    --text "Annonces vocales automatisées pour des informations passager temps réel." \
+    --output outputs/annonces_vocales_cloned.wav \
+    --language fr
 
 # With manual CSV for transcriptions
-python clone_voice.py --csv data.csv --audio-dir ./audios --text "Prochain arrêt, Bièvres Gare." --output outputs/prochain_arret.wav --language fr
+python clone_voice.py --csv data.csv \
+    --audio-dir ./audios \
+    --text "Prochain arrêt, Bièvres Gare." \
+    --output outputs/prochain_arret.wav \
+    --language fr
 ```
 
 ### Running the Test
