@@ -58,6 +58,10 @@ class VoiceCloner:
             
         print("Initializing voice cloning model... This may take a moment on first run.")
         
+        # Register TTS configuration classes as safe globals for PyTorch 2.6+
+        # This is required because torch.load() now defaults to weights_only=True
+        self._register_tts_safe_globals()
+        
         from TTS.api import TTS
         
         # Determine device
@@ -75,6 +79,33 @@ class VoiceCloner:
         self._initialized = True
         
         print("Voice cloning model initialized successfully!")
+    
+    def _register_tts_safe_globals(self) -> None:
+        """
+        Register TTS configuration classes as safe globals for torch.load().
+        
+        In PyTorch 2.6+, torch.load() defaults to weights_only=True for security.
+        TTS models use custom configuration classes that need to be explicitly
+        allowed for safe loading.
+        """
+        try:
+            from TTS.tts.configs.xtts_config import XttsConfig
+            torch.serialization.add_safe_globals([XttsConfig])
+        except ImportError:
+            # TTS package may not have this config in all versions
+            pass
+        
+        try:
+            from TTS.tts.models.xtts import XttsAudioConfig
+            torch.serialization.add_safe_globals([XttsAudioConfig])
+        except ImportError:
+            pass
+        
+        try:
+            from TTS.config import BaseAudioConfig, BaseDatasetConfig
+            torch.serialization.add_safe_globals([BaseAudioConfig, BaseDatasetConfig])
+        except ImportError:
+            pass
     
     def clone_voice(
         self,
