@@ -69,13 +69,15 @@ venv.bak/
 .DS_Store
 Thumbs.db
 
-# Generated audio files (except samples)
+# Generated audio files (except samples and outputs)
 *.wav
 *.mp3
 *.flac
 *.ogg
 *.m4a
 !samples/**
+!outputs/**
+!audios/**
 
 # Model cache
 .cache/
